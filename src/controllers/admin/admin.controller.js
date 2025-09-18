@@ -103,11 +103,15 @@ export async function getUserDetails(req, res) {
         // ✅ Fetch user details
         const user = await prisma.user.findUnique({
             where: { id:id },
-            include: {
-                profile:true,
-                //cryptoTransactions:true,
-                //fiatTransactions:true,
-                //stakings:true
+            select:{
+                id:true,
+                email:true,
+                profile:{
+                    select: {
+                        firstName: true,
+                        lastName: true,
+                    },
+                }
             },
         }); 
 
