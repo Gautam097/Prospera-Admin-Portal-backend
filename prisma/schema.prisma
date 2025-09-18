@@ -1,0 +1,882 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id                      String                    @id @default(cuid())
+  email                   String                    @unique
+  password                String
+  isActive                Boolean                   @default(true)
+  role                    Role                      @default(USER)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  lastLogin               DateTime?
+  refreshToken            String?
+  refreshTokenExp         DateTime?
+  mfaSecret               String?
+  verficationStatus       UserVerificationStatus    @default(UNVERIFIED)
+  investorType            InvestorType              @default(RETAIL_INVESTOR)
+  userType                UserType                  @default(INDIVIDUAL)
+  name                    String?
+  phoneNumber             String?
+  preferredCurrencyId     String?
+  prosperaId              String?                   @unique
+  cryptoWithdrawalRequest CryptoWithdrawalRequest[]
+  depositAddresses        DepositAddress[]
+  NotificationSetting     NotificationSetting?
+  sessions                UserSession[]
+  vault                   UserVault?
+  cryptoTransactions      CryptoTransaction[]
+  fiatTransactions        FiatTransaction[]
+  microDeposits           MicroDeposit[]
+  onboardingQuestionnaire OnboardingQuestionnaire?
+  stakings                Staking[]
+  tokenHoldings           TokenHoldings?
+  tokenPurchases          TokenPurchase[]
+  bankAccounts            UserBankAccount[]
+  cards                   UserCard[]
+  fiatVault               UserFiatVault?
+  profile                 UserProfile?
+  securityQuestions       UserSecurityQuestion[]
+  preferredCurrency       SupportedCurrency?        @relation("UserPreferredCurrency", fields: [preferredCurrencyId], references: [id])
+
+  @@index([email])
+  @@map("users")
+}
+
+model UserProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  dob               DateTime?
+  address           String?
+  state             String?
+  zipCode           Int?
+  kycStartedAt      DateTime?
+  sumsubApplicantId String?
+  country           String?
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserSecurityQuestion {
+  id       String @id @default(cuid())
+  userId   String
+  question String
+  answer   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_security_questions")
+}
+
+model OnboardingQuestionnaire {
+  id                                String                 @id @default(cuid())
+  userId                            String                 @unique
+  proofOfFundBankStatementUrl       String?
+  proofOfFundInvestmentStatementUrl String?
+  riskTolerance                     RiskTolerance
+  createdAt                         DateTime               @default(now())
+  updatedAt                         DateTime               @updatedAt
+  employmentStatus                  EmploymentStatus
+  annualIncome                      AnnualIncome
+  netWorth                          NetWorth
+  expectedInvestedVolume            ExpectedInvestedVolume
+  sourceOfFunds                     SourceOfFunds
+  user                              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_questionnaires")
+}
+
+model PasswordChangeRequest {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  newPassword String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@map("password_change_request")
+}
+
+model UserSession {
+  id              String   @id @default(cuid())
+  userId          String
+  device          String
+  os              String
+  browser         String
+  location        String?
+  ipAddress       String?
+  refreshToken    String
+  refreshTokenExp DateTime
+  isCurrent       Boolean  @default(false)
+  lastActive      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  timeZone        String?
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+model PendingUserRegistration {
+  email             String           @id
+  password          String
+  name              String
+  phoneNumber       String
+  dob               DateTime?
+  address           String?
+  state             String?
+  zipCode           Int?
+  createdAt         DateTime         @default(now())
+  mfaSecret         String?
+  securityQuestions Json?
+  currentStep       RegistrationStep @default(INITIATED)
+  investorType      InvestorType     @default(RETAIL_INVESTOR)
+  userType          UserType         @default(INDIVIDUAL)
+  country           String?
+}
+
+model LoginSession {
+  id            String   @id @default(cuid())
+  email         String
+  emailVerified Boolean  @default(false)
+  otpVerified   Boolean  @default(false)
+  mfaVerified   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([email])
+}
+
+model UserOtp {
+  id          String     @id @default(cuid())
+  email       String
+  phoneNumber String?
+  code        String
+  purpose     OtpPurpose
+  expiresAt   DateTime
+  createdAt   DateTime   @default(now())
+  secret      String?
+
+  @@unique([email, phoneNumber, purpose], name: "email_phone_purpose_unique")
+  @@index([email, phoneNumber, purpose])
+}
+
+model SecurityQuestion {
+  id              String   @id @default(cuid())
+  question        String   @db.VarChar(255)
+  maxAnswerLength Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model UserCard {
+  id                String    @id @default(cuid())
+  userId            String
+  cardNumber        String
+  lastFourDigits    String
+  cardHolderName    String
+  expiryMonth       Int
+  expiryYear        Int
+  cardType          CardType
+  nickname          String?
+  isDefault         Boolean   @default(false)
+  isActive          Boolean   @default(true)
+  isVerified        Boolean   @default(false)
+  verifiedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  cvv               String
+  seonSecurityScore Int?
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@index([userId, isActive])
+  @@map("user_cards")
+}
+
+model UserBankAccount {
+  id                      String             @id @default(cuid())
+  userId                  String
+  accountType             BankAccountType
+  bankName                String
+  branchName              String?
+  accountHolderName       String
+  bankAddress             String?
+  bankCity                String?
+  bankState               String?
+  bankCountry             String             @default("US")
+  bankZipCode             String?
+  nickname                String?
+  isDefault               Boolean            @default(false)
+  isActive                Boolean            @default(true)
+  isVerified              Boolean            @default(false)
+  verifiedAt              DateTime?
+  kycStatus               KYCStatus          @default(PENDING)
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  accountHash             String?            @unique
+  encryptedAccountNumber  String
+  encryptedIban           String?
+  encryptedSwiftCode      String?
+  hashedRoutingNumber     String
+  keyVersion              Int                @default(1)
+  microDepositAttempts    Int                @default(0)
+  microDepositExpiresAt   DateTime?
+  microDepositStatus      MicroDepositStatus @default(PENDING)
+  seonSecurityScore       Int?
+  isNostroAccount         Boolean            @default(false)
+  nostroAccountNumber     String?
+  nostroBankAddress       String?
+  nostroBankCountry       String?
+  nostroBankName          String?
+  nostroBankswiftCode     String?
+  nostroBankswiftFee      String?
+  nostroBankAccountNumber String?
+  microDeposits           MicroDeposit[]
+  user                    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@index([userId, isActive])
+  @@index([hashedRoutingNumber])
+  @@index([accountHash])
+  @@index([keyVersion])
+  @@map("user_bank_accounts")
+}
+
+model MicroDeposit {
+  id          String             @id @default(cuid())
+  userId      String
+  accountId   String
+  amount1     Decimal            @db.Decimal(3, 2)
+  amount2     Decimal            @db.Decimal(3, 2)
+  status      MicroDepositStatus @default(SENT)
+  attempts    Int                @default(0)
+  maxAttempts Int                @default(3)
+  sentAt      DateTime           @default(now())
+  expiresAt   DateTime
+  verifiedAt  DateTime?
+  account     UserBankAccount    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("micro_deposits")
+}
+
+model SupportedToken {
+  id                String             @id @default(cuid())
+  symbol            String
+  name              String
+  logoUrl           String?
+  isActive          Boolean            @default(true)
+  code              String             @unique @map("code")
+  depositAddresses  DepositAddress[]
+  cryptoHoldings    CryptoHolding[]
+  tokenNetworks     TokenNetwork[]
+  tokenPrices       TokenPrice[]
+  supportedNetworks SupportedNetwork[] @relation("TokenNetworks")
+
+  @@map("supported_tokens")
+}
+
+model SupportedNetwork {
+  id                    String           @id @default(cuid())
+  name                  String
+  code                  String           @unique
+  fireblocksAssetSuffix String
+  logoUrl               String?
+  isActive              Boolean          @default(true)
+  depositAddresses      DepositAddress[]
+  tokenNetworks         TokenNetwork[]
+  supportedTokens       SupportedToken[] @relation("TokenNetworks")
+
+  @@map("supported_networks")
+}
+
+model TokenNetwork {
+  id                 String              @id @default(cuid())
+  tokenId            String
+  networkId          String
+  fireblocksAssetId  String
+  isActive           Boolean             @default(true)
+  cryptoTransactions CryptoTransaction[]
+  network            SupportedNetwork    @relation(fields: [networkId], references: [id], onDelete: Cascade)
+  token              SupportedToken      @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  tokenPurchases     TokenPurchase[]
+  wallets            Wallet[]
+
+  @@unique([tokenId, networkId])
+  @@map("token_networks")
+}
+
+model SupportedCurrency {
+  id                      String            @id @default(cuid())
+  code                    String            @unique @map("code")
+  name                    String
+  symbol                  String
+  isActive                Boolean           @default(true)
+  logoUrl                 String?
+  pricedAsCurrency        CurrencyPrice[]   @relation("PricedCurrency")
+  usedAsReferenceCurrency CurrencyPrice[]   @relation("ReferenceCurrency")
+  fiatHoldings            FiatHolding[]
+  fiatTransactions        FiatTransaction[]
+  tokenPrices             TokenPrice[]      @relation("TokenPriceCurrency")
+  preferredByUsers        User[]            @relation("UserPreferredCurrency")
+
+  @@map("supported_currencies")
+}
+
+model TokenPrice {
+  id              String            @id @default(cuid())
+  price           Decimal           @db.Decimal(18, 8)
+  timestamp       DateTime          @default(now())
+  tokenId         String
+  quoteCurrencyId String
+  quoteCurrency   SupportedCurrency @relation("TokenPriceCurrency", fields: [quoteCurrencyId], references: [id])
+  token           SupportedToken    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+
+  @@unique([tokenId, quoteCurrencyId])
+  @@index([tokenId, quoteCurrencyId, timestamp])
+  @@map("token_prices")
+}
+
+model CurrencyPrice {
+  id                  String            @id @default(cuid())
+  currencyId          String
+  price               Decimal           @db.Decimal(18, 8)
+  timestamp           DateTime          @default(now())
+  referenceCurrencyId String
+  currency            SupportedCurrency @relation("PricedCurrency", fields: [currencyId], references: [id], onDelete: Cascade)
+  referenceCurrency   SupportedCurrency @relation("ReferenceCurrency", fields: [referenceCurrencyId], references: [id])
+
+  @@unique([currencyId, referenceCurrencyId])
+  @@map("currency_prices")
+}
+
+model TokenHoldings {
+  id           String   @id @default(cuid())
+  userId       String   @unique @map("user_id")
+  liquidTokens Decimal  @default(0) @map("liquid_tokens") @db.Decimal(18, 8)
+  stakedTokens Decimal  @default(0) @map("staked_tokens") @db.Decimal(18, 8)
+  lastUpdated  DateTime @default(now()) @updatedAt @map("last_updated")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("token_holdings")
+}
+
+model UserVault {
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  fireblocksId       String              @unique
+  name               String
+  autoFuel           Boolean             @default(true)
+  hiddenOnUI         Boolean             @default(false)
+  status             VaultStatus         @default(ACTIVE)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cryptoTransactions CryptoTransaction[]
+  wallets            Wallet[]
+}
+
+model Wallet {
+  id             String       @id @default(cuid())
+  address        String
+  amount         Decimal      @default(0) @db.Decimal(18, 8)
+  status         WalletStatus @default(ACTIVE)
+  tokenNetworkId String       @map("token_network_id")
+  userVaultId    String
+  tokenNetwork   TokenNetwork @relation(fields: [tokenNetworkId], references: [id])
+  userVault      UserVault    @relation(fields: [userVaultId], references: [id], onDelete: Cascade)
+
+  @@unique([userVaultId, tokenNetworkId])
+  @@map("wallet")
+}
+
+model CryptoHolding {
+  id        String         @id @default(cuid())
+  walletId  String         @map("wallet_id")
+  tokenId   String         @map("token_id")
+  amount    Decimal        @default(0) @db.Decimal(18, 8)
+  updatedAt DateTime       @default(now()) @updatedAt
+  token     SupportedToken @relation(fields: [tokenId], references: [id])
+
+  @@unique([walletId, tokenId])
+  @@map("crypto_holdings")
+}
+
+model UserFiatVault {
+  id               String            @id @default(cuid())
+  userId           String            @unique
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  holdings         FiatHolding[]
+  fiatTransactions FiatTransaction[]
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_fiat_vaults")
+}
+
+model FiatHolding {
+  id                   String            @id @default(cuid())
+  currencyId           String            @map("currency_id")
+  amount               Decimal           @default(0) @db.Decimal(18, 2)
+  updatedAt            DateTime          @default(now()) @updatedAt
+  applePayHoldings     Decimal           @default(0) @db.Decimal(18, 2)
+  banktransferHoldings Decimal           @default(0) @db.Decimal(18, 2)
+  cardHoldings         Decimal           @default(0) @db.Decimal(18, 2)
+  vaultId              String            @map("vault_id")
+  currency             SupportedCurrency @relation(fields: [currencyId], references: [id])
+  vault                UserFiatVault     @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+
+  @@unique([vaultId, currencyId], name: "vaultId_currencyId")
+  @@map("fiat_holdings")
+}
+
+model DepositAddress {
+  id        String           @id @default(cuid())
+  userId    String
+  tokenId   String           @map("token_id")
+  networkId String           @map("network_id")
+  assetId   String
+  address   String           @unique
+  tag       String?
+  createdAt DateTime         @default(now())
+  network   SupportedNetwork @relation(fields: [networkId], references: [id])
+  token     SupportedToken   @relation(fields: [tokenId], references: [id])
+  user      User             @relation(fields: [userId], references: [id])
+
+  @@unique([userId, tokenId, networkId])
+}
+
+model CryptoTransaction {
+  id                      String                   @id @default(cuid())
+  userId                  String
+  vaultId                 String
+  tokenNetworkId          String                   @map("token_network_id")
+  type                    CryptoTransactionType
+  status                  CryptoTransactionStatus
+  amount                  Decimal                  @db.Decimal(36, 18)
+  fee                     Decimal?                 @db.Decimal(36, 18)
+  fireblocksTransactionId String?
+  txHash                  String?
+  sourceAddress           String?
+  destinationAddress      String?
+  metadata                Json?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  withdrawalRequest       CryptoWithdrawalRequest? @relation("TransactionWithdrawal")
+  tokenNetwork            TokenNetwork             @relation(fields: [tokenNetworkId], references: [id])
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vault                   UserVault                @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  tokenPurchases          TokenPurchase[]
+
+  @@index([userId])
+  @@map("crypto_transactions")
+}
+
+model CryptoWithdrawalRequest {
+  id             String                @id @default(cuid())
+  userId         String
+  amount         Decimal               @db.Decimal(36, 18)
+  tokenNetworkId String?               @map("token_network_id")
+  destination    String
+  emailVerified  Boolean               @default(false)
+  mfaVerified    Boolean               @default(false)
+  status         WithdrawalStatus      @default(PENDING_VERIFICATION)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  requestType    WithdrawalRequestType @default(WITHDRAW)
+  transactionId  String?               @unique
+  transaction    CryptoTransaction?    @relation("TransactionWithdrawal", fields: [transactionId], references: [id])
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FiatTransaction {
+  id             String                @id @default(cuid())
+  userId         String
+  type           FiatTransactionType
+  status         FiatTransactionStatus
+  amount         Decimal               @db.Decimal(18, 2)
+  currencyId     String
+  paymentMethod  FiatPaymentMethod
+  referenceId    String?
+  metadata       Json?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  vaultId        String
+  currency       SupportedCurrency     @relation(fields: [currencyId], references: [id])
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userFiatVault  UserFiatVault         @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  tokenPurchases TokenPurchase[]
+
+  @@index([userId])
+  @@map("fiat_transactions")
+}
+
+model TokenPurchase {
+  id                  String              @id @default(cuid())
+  userId              String
+  tokenNetworkId      String
+  amountToken         Decimal             @db.Decimal(36, 18)
+  tokenPrice          Decimal             @db.Decimal(18, 6)
+  totalCost           Decimal             @db.Decimal(18, 2)
+  fiatTransactionId   String?
+  cryptoTransactionId String?
+  status              TokenPurchaseStatus @default(PENDING)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  customerRefId       String?
+  depositAddress      String?
+  cryptoTransaction   CryptoTransaction?  @relation(fields: [cryptoTransactionId], references: [id])
+  fiatTransaction     FiatTransaction?    @relation(fields: [fiatTransactionId], references: [id])
+  tokenNetwork        TokenNetwork        @relation(fields: [tokenNetworkId], references: [id])
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("token_purchases")
+}
+
+model Staking {
+  id                 String             @id @default(cuid())
+  userId             String
+  assetName          String
+  lockUpPeriod       LockUpPeriod
+  amountToStake      Decimal            @db.Decimal(10, 3)
+  rewardClaiming     RewardClaimingType
+  stakeStartDate     DateTime           @default(now())
+  stakeEndDate       DateTime
+  redemptionDate     DateTime?
+  interestPeriod     String?
+  estAPY             Decimal            @db.Decimal(10, 3)
+  estimatedInterests Decimal            @db.Decimal(10, 3)
+  status             Status             @default(ACTIVE)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  currentValue       Decimal            @db.Decimal(10, 3)
+  stakeId            String             @unique
+  accruedInterest    Decimal            @default(0) @db.Decimal(10, 3)
+  currentProgress    Decimal            @default(0) @db.Decimal(5, 2)
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("staking")
+}
+
+model Country {
+  id        String        @id @default(uuid())
+  name      String        @unique
+  code      String?
+  status    CountryStatus @default(ACTIVE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  states    State[]
+}
+
+model State {
+  id        String        @id @default(uuid())
+  name      String
+  status    CountryStatus @default(ACTIVE)
+  countryId String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  cities    City[]
+  country   Country       @relation(fields: [countryId], references: [id])
+}
+
+model City {
+  id        String        @id @default(uuid())
+  name      String
+  status    CountryStatus @default(ACTIVE)
+  stateId   String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  state     State         @relation(fields: [stateId], references: [id])
+}
+
+model NotificationSetting {
+  userId             String   @id
+  email              String   @default("on")
+  phone              String   @default("on")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  push               String   @default("on")
+  marketPrice        String   @default("on")
+  portfolioSummary   String   @default("on")
+  receiveInvestment  String   @default("on")
+  receiveSecurity    String   @default("on")
+  receiveTransaction String   @default("on")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum UserVerificationStatus {
+  UNVERIFIED
+  PENDING
+  KYC_VERIFIED
+  KYB_VERIFIED
+  KYC_AND_KYB_VERIFIED
+}
+
+enum UserType {
+  INDIVIDUAL
+  BUSINESS
+}
+
+enum InvestorType {
+  RETAIL_INVESTOR
+  ACCELERATE_INVESTOR
+}
+
+enum OtpPurpose {
+  LOGIN
+  REGISTER
+  PASSWORD_RESET
+  FORGOT_PASSWORD
+  MFA_UPDATE
+  EMAIL_UPDATE
+  PHONE_UPDATE
+  REGISTER_EMAIL
+  REGISTER_PHONE
+  CRYPTO_WITHDRAWAL
+  FIAT_WITHDRAWAL
+}
+
+enum RegistrationStep {
+  INITIATED
+  OTP_VERIFIED
+  SECURITY_QUESTIONS_VERIFIED
+  MFA_SETUP_COMPLETED
+  ONBOARDING_QUESTIONNAIRE_COMPLETED
+  EMAIL_OTP_VERIFIED
+  PHONE_OTP_VERIFIED
+}
+
+enum RiskTolerance {
+  LOW
+  MODERATE
+  HIGH
+}
+
+enum EmploymentStatus {
+  BUSINESS_OWNER
+  SENIOR_EXECUTIVE
+  PROFESSIONAL
+  INVESTOR
+  RETIRED
+  TRUST_BENEFICIARY
+  FAMILY_OFFICE_REPRESENTATIVE
+  OTHER
+}
+
+enum AnnualIncome {
+  BETWEEN_250K_500K
+  BETWEEN_500K_1M
+  BETWEEN_1M_5M
+  ABOVE_5M
+}
+
+enum NetWorth {
+  BETWEEN_1M_5M
+  BETWEEN_5M_10M
+  BETWEEN_10M_25M
+  ABOVE_25M
+}
+
+enum ExpectedInvestedVolume {
+  BETWEEN_100K_250K
+  BETWEEN_250K_500K
+  BETWEEN_500K_1M
+  ABOVE_1M
+}
+
+enum SourceOfFunds {
+  BUSINESS_INCOME
+  SALE_OF_ASSETS
+  INVESTMENT_RETURNS
+  REAL_ESTATE_SALE
+  INHERITANCE
+  PRIVATE_EQUITY_EXIT
+  CRYPTO_LIQUIDITY_EVENT
+  OTHER
+}
+
+enum TransactionType {
+  PURCHASE
+  SELL
+  STAKE
+  UNSTAKE
+  FIAT_DEPOSIT
+  FIAT_WITHDRAW
+  CRYPTO_SEND
+  CRYPTO_RECEIVE
+  EXCHANGE
+  BANK_TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum TransactionSecurityFlag {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum CardType {
+  VISA
+  MASTERCARD
+  AMERICAN_EXPRESS
+  DISCOVER
+  JCB
+  DINERS_CLUB
+  UNIONPAY
+  OTHER
+}
+
+enum BankAccountType {
+  CHECKING
+  SAVINGS
+  BUSINESS_CHECKING
+  BUSINESS_SAVINGS
+  MONEY_MARKET
+  OTHER
+}
+
+enum KYCStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum MicroDepositStatus {
+  PENDING
+  SENT
+  VERIFIED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum CryptoTransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+  EXCHANGE
+  PURCHASE
+}
+
+enum CryptoTransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum VaultStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  ERROR
+}
+
+enum WalletStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+  ERROR
+}
+
+enum WithdrawalStatus {
+  PENDING_VERIFICATION
+  AWAITING_ADMIN_APPROVAL
+  APPROVED
+  REJECTED
+  COMPLETED
+  FAILED
+  PROCESSING
+}
+
+enum WithdrawalRequestType {
+  TRANSFER
+  WITHDRAW
+  CONVERT
+}
+
+enum FiatTransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  PURCHASE
+  REFUND
+}
+
+enum FiatTransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum FiatPaymentMethod {
+  CARD
+  BANK_TRANSFER
+  UPI
+  WALLET
+  APPLE_PAY
+}
+
+enum TokenPurchaseStatus {
+  PENDING
+  COMPLETED
+}
+
+enum LockUpPeriod {
+  THREE_MONTHS
+  SIX_MONTHS
+  TWELVE_MONTHS
+}
+
+enum RewardClaimingType {
+  MANUAL
+  DIRECTLY_TO_ACCOUNT
+}
+
+enum Status {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  WITHDRAW
+}
+
+enum CountryStatus {
+  ACTIVE
+  INACTIVE
+}
