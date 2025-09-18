@@ -1,7 +1,8 @@
 import prisma from '../../lib/prisma.js';
 import logger from '../../utils/winston.logger.js';
 import { sendError, sendSuccess } from '../../utils/sendResponse.js';
-
+import {getBankAccountById, getBankAccountsByUserId} from '../../models/payment.model.js';
+import { maskCardNumber, sanitizeCard } from '../../utils/card.encryption.js';
 
 export async function listUsers(req, res) {
     try {
@@ -106,37 +107,142 @@ export async function getUserDetails(req, res) {
             select:{
                 id:true,
                 email:true,
+                phoneNumber:true,
+                verficationStatus:true,
+                investorType:true,
+                name:true,
                 profile:{
                     select: {
-                        firstName: true,
-                        lastName: true,
+                        dob: true,
+                        state: true,
+                        address: true,
+                        zipCode: true,
+                        country: true,
                     },
+                },
+                tokenHoldings:true,
+                bankAccounts:{
+                    select:{
+                        bankName:true,
+                        accountType:true,
+                        nostroBankName:true,
+                        nostroAccountNumber:true
+                    }
+                },
+                cards:{
+                    select:{
+                        cardNumber:true,
+                        cardType:true,
+                        isActive:true,
+                        lastFourDigits:true
+                    }
+                },
+                fiatVault:{
+                    select:{
+                        holdings:true
+                    }
+                },
+                vault: {
+                    select: {
+                        wallets: {
+                            select: {
+                                id: true,
+                                address: true,
+                                amount: true,
+                                tokenNetworkId: true,
+                                // cryptoHoldings: {
+                                //     select: {
+                                //         amount: true,
+                                //         tokenId: true, // optional: if you want to know which token
+                                //         token: {
+                                //             select: {
+                                //                 name: true,
+                                //                 symbol: true
+                                //             }
+                                //         }
+                                //     }
+                                // }
+                            }
+                        }
+                    }
                 }
             },
         }); 
+        
+        if (user?.cards?.length > 0) {
+            user.cards = await Promise.all(
+                user.cards.map(async (card) => {
+                const maskedNumber = await maskCardNumber(card.lastFourDigits);
+                return sanitizeCard(card, maskedNumber);
+                })
+            );
+        }
 
         if (!user) {
             return sendError(res, "Not Found", "User not found", 404);
         }
         
-
         // ✅ Fetch transactions with pagination + sorting
-        const [transactions, txCount] = await Promise.all([
-            prisma.cryptoTransaction.findMany({
-                where: { userId:id },
-                orderBy: { [txOrderBy]: txOrder },
-                skip: (txPageNo - 1) * txPageSize,
-                take: txPageSize,
-                select: {
-                    id: true,
-                    amount: true,
-                    type: true,
-                    status: true,
-                    createdAt: true,
-                }
-            }),
-            prisma.cryptoTransaction.count({ where: { userId:id } })
-        ]);
+        // const [transactions, txCount] = await Promise.all([
+        //     prisma.cryptoTransaction.groupBy({
+        //         where: { userId:id },
+        //         orderBy: { [txOrderBy]: txOrder },
+        //         skip: (txPageNo - 1) * txPageSize,
+        //         take: txPageSize,
+        //         select: {
+        //             id: true,
+        //             amount: true,
+        //             type: true,
+        //             status: true,
+        //             createdAt: true,
+        //         }
+        //     }),
+        //     prisma.cryptoTransaction.count({ where: { userId:id } })
+        // ]);
+        const page = parseInt(typeof req.query.page === "string" ? req.query.page : "1");
+        const limit = parseInt(typeof req.query.limit === "string" ? req.query.limit : "5");
+        const skip = (page - 1) * limit;
+        const history = await prisma.UserSession.findMany({
+            where: { userId:id },
+            orderBy: { lastActive: "desc" },
+            skip,
+            take: limit,
+            select:{
+                device: true,
+                os: true,
+                browser: true,
+                ipAddress: true
+            }
+        });
+
+        if (!history.length) {
+            return sendSuccess(res, { sessions: [] }, "No session history found");
+        }
+
+        
+        // const accounts = await getBankAccountsByUserId(id, ['bankName','accountType','nostroBankName','nostroAccountNumber']);
+
+        // if (!accounts || accounts.length === 0) {
+        //     return sendSuccess(res, [], 'No bank accounts found');
+        // }
+        
+        // const userCards =  await prisma.userCard.findMany({
+        //     where: { userId:id, isActive: true },
+        //     orderBy: { createdAt: 'desc' },
+        //     select:{
+        //         cardNumber:true,
+        //         cardType:true,
+        //         lastFourDigits:true,
+        //         isActive:true
+        //     }
+        // });
+
+        // const sanitizedCards = await Promise.all(
+        //     userCards.map(async (card) => {
+        //         const maskedNumber = await maskCardNumber(card.lastFourDigits);
+        //         return sanitizeCard(card, maskedNumber);
+        //     })
+        // );
 
         // ✅ Fetch history with pagination + sorting
         // const [history, historyCount] = await Promise.all([
@@ -157,15 +263,16 @@ export async function getUserDetails(req, res) {
 
         return sendSuccess(res, {
             user,
-           // userdetail,
-            transactions: {
-                data: transactions,
-                count: txCount,
-                page: txPageNo,
-                limit: txPageSize,
-                orderBy: txOrderBy,
-                order: txOrder
-            },
+            history:history,
+            // userdetail,
+            // transactions: {
+            //     data: transactions,
+            //     count: txCount,
+            //     page: txPageNo,
+            //     limit: txPageSize,
+            //     orderBy: txOrderBy,
+            //     order: txOrder
+            // },
             // history: {
             //     data: history,
             //     count: historyCount,
