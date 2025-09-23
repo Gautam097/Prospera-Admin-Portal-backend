@@ -1,7 +1,9 @@
 import prisma from '../../lib/prisma.js';
 import logger from '../../utils/winston.logger.js';
 import { sendError, sendSuccess } from '../../utils/sendResponse.js';
-import { CountryStatus as CityStatus} from '@prisma/client';
+// import { CountryStatus as CityStatus} from '@prisma/client';
+import pkg from '@prisma/client';
+const { CountryStatus: CityStatus } = pkg;
 
 // ---------------- CREATE ----------------
 export const createCity = async (req, res) => {

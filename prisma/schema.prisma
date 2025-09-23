@@ -292,6 +292,7 @@ model SupportedToken {
   tokenNetworks     TokenNetwork[]
   tokenPrices       TokenPrice[]
   supportedNetworks SupportedNetwork[] @relation("TokenNetworks")
+  isDeleted         Boolean            @default(false)
 
   @@map("supported_tokens")
 }
@@ -306,6 +307,7 @@ model SupportedNetwork {
   depositAddresses      DepositAddress[]
   tokenNetworks         TokenNetwork[]
   supportedTokens       SupportedToken[] @relation("TokenNetworks")
+  isDeleted             Boolean            @default(false)
 
   @@map("supported_networks")
 }
@@ -339,6 +341,7 @@ model SupportedCurrency {
   fiatTransactions        FiatTransaction[]
   tokenPrices             TokenPrice[]      @relation("TokenPriceCurrency")
   preferredByUsers        User[]            @relation("UserPreferredCurrency")
+  isDeleted               Boolean            @default(false)
 
   @@map("supported_currencies")
 }
