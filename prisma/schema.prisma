@@ -598,6 +598,7 @@ model SupportedToken {
   isActive Boolean @default(true)
   isDeleted             Boolean            @default(false)
 
+
   // Relations
   supportedNetworks SupportedNetwork[] @relation("TokenNetworks")
   cryptoHoldings    CryptoHolding[]
@@ -617,6 +618,7 @@ model SupportedNetwork {
   logoUrl               String?
   isActive              Boolean @default(true)
   isDeleted             Boolean            @default(false)
+
 
   // Relations
   supportedTokens  SupportedToken[] @relation("TokenNetworks")
@@ -898,6 +900,7 @@ model FiatWithdrawalRequest {
   @@map("fiat_withdrawal_requests")
 }
 
+
 model Logs {
   id          String   @id @default(cuid())
   tableName   String
@@ -910,6 +913,7 @@ model Logs {
 
    @@map("logs")
 }
+
 
 // --------------------------------------------------
 // BUY TOKEN MODELS
@@ -1152,3 +1156,4 @@ model AdminActionLog {
 
   admin       User     @relation("AdminActionLogs", fields: [adminId], references: [id])
 }
+
