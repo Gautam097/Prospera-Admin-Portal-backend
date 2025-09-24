@@ -14,7 +14,14 @@ import corsOptions from './middleware/cors.config.js';
 import * as ServerStatus from './utils/serverInfo.js';
 import { sendSuccess } from './utils/sendResponse.js';
 import { swaggerSpec, swaggerUi } from './config/swagger.js';
+import logger from './utils/winston.logger.js';
 
+// Cron jobs
+// if (process.env.NODE_ENV !== "development") {
+//     logger.info('Loaded cron jobs');
+
+//     await import("./controllers/jobs/assets.cron.js");
+// }
 // Load environment variables
 dotenv.config();
 

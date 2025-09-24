@@ -596,6 +596,8 @@ model SupportedToken {
   symbol   String
   logoUrl  String?
   isActive Boolean @default(true)
+  isDeleted             Boolean            @default(false)
+
 
   // Relations
   supportedNetworks SupportedNetwork[] @relation("TokenNetworks")
@@ -615,6 +617,8 @@ model SupportedNetwork {
   fireblocksAssetSuffix String // e.g., "ETH", "POLYGON" to build fireblocks assetId: "USDC-ETH"
   logoUrl               String?
   isActive              Boolean @default(true)
+  isDeleted             Boolean            @default(false)
+
 
   // Relations
   supportedTokens  SupportedToken[] @relation("TokenNetworks")
@@ -649,6 +653,7 @@ model SupportedCurrency {
   symbol   String
   logoUrl  String?
   isActive Boolean @default(true)
+  isDeleted Boolean @default(false)
 
   // Required reverse relations
   tokenPrices             TokenPrice[]            @relation("TokenPriceCurrency") // For TokenPrice.quoteCurrency
@@ -895,6 +900,21 @@ model FiatWithdrawalRequest {
   @@map("fiat_withdrawal_requests")
 }
 
+
+model Logs {
+  id          String   @id @default(cuid())
+  tableName   String
+  action      String
+  recordId    String
+  type        String 
+  oldData     Json?
+  newData     Json?
+  createdAt   DateTime @default(now())
+
+   @@map("logs")
+}
+
+
 // --------------------------------------------------
 // BUY TOKEN MODELS
 // --------------------------------------------------
@@ -1136,3 +1156,4 @@ model AdminActionLog {
 
   admin       User     @relation("AdminActionLogs", fields: [adminId], references: [id])
 }
+
