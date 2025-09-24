@@ -3,13 +3,24 @@ import express from 'express';
 const router = express.Router();
 
 import * as userController from '../../../controllers/users/users.controller.js';
-import * as cityController from '../../../controllers/common/city.controller.js';
-import * as countryController from '../../../controllers/common/country.controller.js';
-import * as stateController from '../../../controllers/common/state.controller.js';
+import * as cityController from '../../../controllers/master/city.controller.js';
+import * as countryController from '../../../controllers/master/country.controller.js';
+import * as stateController from '../../../controllers/master/state.controller.js';
+import * as stakeConfigController from '../../../controllers/master/stakingConfig.controller.js';
 
 router.route('/users/list').get(userController.listUsers);
 router.route('/userdetail/:id').get(userController.getUserDetails);
 router.route('/userfreeze/:id').post(userController.toggleUserFreeze);
+
+
+//staking config
+router.post('/staking-configs', stakeConfigController.createStakingConfig);
+router.get('/staking-configs', stakeConfigController.listStakingConfigs);
+router.get('/staking-configs/:id', stakeConfigController.getStakingConfig);
+router.put('/staking-configs/:id', stakeConfigController.updateStakingConfig);
+router.delete('/staking-configs/:id', stakeConfigController.deleteStakingConfig);
+router.patch('/staking-configs/:id/toggle', stakeConfigController.toggleStakingConfig);
+
 
 // country
 router.post("/countries", countryController.createCountry);
@@ -17,7 +28,6 @@ router.get("/countries", countryController.listCountries);
 router.put("/countries/:id", countryController.updateCountry);
 router.patch("/countries/:id/status", countryController.toggleCountryStatus);
 router.delete('/countries/:id', countryController.deleteCountry);
-
 
 // State
 router.post("/states", stateController.createState);
