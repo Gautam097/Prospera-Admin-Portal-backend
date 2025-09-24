@@ -284,7 +284,7 @@ model User {
   earlyWithdrawalSessions EarlyWithdrawalSession[]
   isFrozen                Boolean                   @default(false)
   actionsTaken            UserActionLog[]           @relation("AdminUserActions")
-
+  adminActionLogs         AdminActionLog[]          @relation("AdminActionLogs")
   @@index([email])
   @@map("users")
 }
@@ -1109,4 +1109,30 @@ model EarlyWithdrawalSession {
   stake Staking @relation(fields: [stakeId], references: [id])
 
   @@unique([userId, stakeId], name: "userId_stakeId_unique")
+}
+
+model StakingConfig {
+  id         String   @id @default(uuid())
+  name       String
+  apr        Float
+  earlywithdrawAllowed  Boolean  @default(true)
+  minAmount  Float
+  maxAmount  Float
+  lockPeriod Int      // in days
+  isActive   Boolean  @default(true)
+  isDeleted  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model AdminActionLog {
+  id          String   @id @default(uuid())
+  adminId     String
+  actionType  String   // e.g. "UPDATE_STAKING_CONFIG"
+  targetId    String?  // e.g. StakingConfig ID
+  description String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  admin       User     @relation("AdminActionLogs", fields: [adminId], references: [id])
 }
