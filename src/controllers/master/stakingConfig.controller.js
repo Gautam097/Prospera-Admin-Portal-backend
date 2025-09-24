@@ -1,6 +1,8 @@
 import prisma from '../../lib/prisma.js';
 import logger from '../../utils/winston.logger.js';
 import { sendError, sendSuccess } from '../../utils/sendResponse.js';
+import { logAdminAction } from '../../utils/logAdminAction.js';
+
 
 // ------------------ CREATE ------------------
 export const createStakingConfig = async (req, res) => {
@@ -108,34 +110,13 @@ export const updateStakingConfig = async (req, res) => {
       },
     });
 
-    await prisma.adminActionLog.create({
-      data: {
-        //adminId: req.user.id, // Assuming you have `req.user` from auth middleware
-        adminId: 'cmer146vw0008bm0ain16nbef', // Assuming you have `req.user` from auth middleware
-        actionType: 'UPDATE_STAKING_CONFIG',
-        targetId: updated.id,
-        description: `Updated staking config "${updated.name}"`,
-        metadata: {
-            previousData: {
-                name: existing.name,
-                apr: existing.apr,
-                lockPeriod: existing.lockPeriod,
-                earlywithdrawAllowed: existing.earlywithdrawAllowed,
-                minAmount: existing.minAmount,
-                maxAmount: existing.maxAmount,
-                isActive: existing.isActive,
-            },
-            newData: {
-                name,
-                apr,
-                lockPeriod,
-                earlywithdrawAllowed,
-                minAmount,
-                maxAmount,
-                isActive,
-            },
-        },
-      },
+    await logAdminAction({
+      adminId: req.user?.id || 'cmer146vw0008bm0ain16nbef', // Replace or attach from auth
+      modelName: 'StakingConfig',
+      actionType: 'UPDATE',
+      targetId: id,
+      previousData: existing,
+      newData: updated,
     });
     
     return sendSuccess(res, updated, 'Staking config updated successfully');
@@ -153,14 +134,12 @@ export const deleteStakingConfig = async (req, res) => {
         where: { id },
         data: { isDeleted: false },
     });
-    await prisma.adminActionLog.create({
-        data: {
-            adminId: "cmer146vw0008bm0ain16nbef",
-            actionType: 'SOFT_DELETE_STAKING_CONFIG',
-            targetId: id,
-            description: `Soft-deleted staking config`,
-            metadata: { id }
-        }
+    await logAdminAction({
+        adminId: req.user?.id || 'cmer146vw0008bm0ain16nbef',
+        modelName: 'StakingConfig',
+        actionType: 'SOFT_DELETE',
+        targetId: id,
+        previousData: existing,
     });
     return sendSuccess(res, null, 'Staking config deleted');
   } catch (err) {
@@ -187,18 +166,12 @@ export const toggleStakingConfig = async (req, res) => {
       data: { isActive: !config.isActive }
     });
 
-    // Log action (optional)
-    await prisma.adminActionLog.create({
-      data: {
-        adminId: 'cmer146vw0008bm0ain16nbef',
-        actionType: 'TOGGLE_STAKING_CONFIG',
+    await logAdminAction({
+        adminId: req.user?.id || 'cmer146vw0008bm0ain16nbef',
+        modelName: 'StakingConfig',
+        actionType: 'TOGGLE',
         targetId: id,
-        description: `${updated.name} set to ${updated.isActive ? 'ACTIVE' : 'INACTIVE'}`,
-        metadata: {
-          previousState: config.isActive,
-          newState: updated.isActive
-        }
-      }
+        previousData: config,
     });
 
     return sendSuccess(res, updated, `Staking config is now ${updated.isActive ? 'active' : 'inactive'}`);
