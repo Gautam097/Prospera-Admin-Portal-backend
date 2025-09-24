@@ -1,6 +1,7 @@
 import express from "express";
 import logger from '../../utils/winston.logger.js';
 import { sendError, sendSuccess } from '../../utils/sendResponse.js';
+import { logCrudAction } from "../../utils/logs.js";
 import pkg from "@prisma/client";
 
 const { PrismaClient } = pkg;
@@ -162,10 +163,23 @@ export const editToken = async (req, res) => {
     const { id } = req.params;
     const data = req.body; // fields to update
 
+    // 1. Get the old record before update
+    const oldToken = await prisma.supportedToken.findUnique({
+      where: { id },
+    });
+
+    if (!oldToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
     const token = await prisma.supportedToken.update({
       where: { id },
       data,
     });
+    await logCrudAction("SupportedToken", "Update", token.id, "Crypto", oldToken, token);
 
     res.json({
       success: true,
@@ -205,10 +219,23 @@ export const updateTokenStatus = async (req, res) => {
       });
     }
 
+    // 1. Get the old record before update
+    const oldToken = await prisma.supportedToken.findUnique({
+      where: { id },
+    });
+
+    if (!oldToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
     const token = await prisma.supportedToken.update({
       where: { id },
       data: { isActive },
     });
+    await logCrudAction("SupportedToken", "Update", token.id, "Crypto", oldToken, token);
 
     res.json({
       success: true,
@@ -240,10 +267,24 @@ export const softDeleteToken = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // 1. Get the old record before update
+    const oldToken = await prisma.supportedToken.findUnique({
+      where: { id },
+    });
+
+    if (!oldToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
     const token = await prisma.supportedToken.update({
       where: { id },
       data: { isDeleted: true },
     });
+
+    await logCrudAction("SupportedToken", "Delete", token.id, "Crypto", oldToken, token);
 
     res.json({
       success: true,
@@ -331,10 +372,24 @@ export const softDeleteFiat = async (req, res) => {
       return sendError(res, "Missing ID", "ID not found", 400);
     }
 
+    // 1. Get the old record before update
+    const oldToken = await prisma.SupportedCurrency.findUnique({
+      where: { id },
+    });
+
+    if (!oldToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
     const token = await prisma.SupportedCurrency.update({
       where: { id },
       data: { isDeleted: true },
     });
+    
+    await logCrudAction("SupportedCurrency", "Delete", token.id, "Fiat", oldToken, token);
 
     res.json({
       success: true,
@@ -399,10 +454,24 @@ export const editFiat = async (req, res) => {
     const { id } = req.params;
     const data = req.body; // fields to update
 
+    // 1. Get the old record before update
+    const oldToken = await prisma.SupportedCurrency.findUnique({
+      where: { id },
+    });
+
+    if (!oldToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
     const token = await prisma.SupportedCurrency.update({
       where: { id },
       data,
     });
+
+    await logCrudAction("SupportedCurrency", "Update", token.id, "Fiat", oldToken, token);
 
     res.json({
       success: true,
@@ -442,10 +511,24 @@ export const updateFiatStatus = async (req, res) => {
       });
     }
 
+    // 1. Get the old record before update
+    const oldToken = await prisma.SupportedCurrency.findUnique({
+      where: { id },
+    });
+
+    if (!oldToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
     const token = await prisma.SupportedCurrency.update({
       where: { id },
       data: { isActive },
     });
+
+    await logCrudAction("SupportedCurrency", "Update", token.id, "Fiat", oldToken, token);
 
     res.json({
       success: true,
@@ -490,6 +573,7 @@ export const CreateFiat = async (req, res) => {
     const existing = await prisma.supportedCurrency.findUnique({
       where: { code },
     });
+  
     if (existing) {
       return res.status(409).json({
         success: false,
@@ -507,6 +591,8 @@ export const CreateFiat = async (req, res) => {
         isActive: isActive !== undefined ? isActive : true,
       },
     });
+    
+    await logCrudAction("SupportedCurrency", "Create", currency.id, "Fiat", null, currency);
 
     res.status(201).json({
       success: true,
@@ -621,10 +707,24 @@ export const editNetwork = async (req, res) => {
     const { id } = req.params;
     const data = req.body; // fields to update
 
+    // 1. Get the old record before update
+    const oldToken = await prisma.supportedNetwork.findUnique({
+      where: { id },
+    });
+
+    if (!oldToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
     const token = await prisma.supportedNetwork.update({
       where: { id },
       data,
     });
+
+    await logCrudAction("supportedNetwork", "Update", token.id, "Network", oldToken, token);
 
     res.json({
       success: true,
@@ -665,10 +765,24 @@ export const updateNetworkStatus = async (req, res) => {
       });
     }
 
+    // 1. Get the old record before update
+    const oldToken = await prisma.supportedNetwork.findUnique({
+      where: { id },
+    });
+
+    if (!oldToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
     const token = await prisma.supportedNetwork.update({
       where: { id },
       data: { isActive },
     });
+
+    await logCrudAction("supportedNetwork", "Update", token.id, "Network", oldToken, token);
 
     res.json({
       success: true,
@@ -700,10 +814,24 @@ export const softDeleteNetwork = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // 1. Get the old record before update
+    const oldToken = await prisma.supportedNetwork.findUnique({
+      where: { id },
+    });
+
+    if (!oldToken) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
     const token = await prisma.supportedNetwork.update({
       where: { id },
       data: { isDeleted: true },
     });
+
+    await logCrudAction("supportedNetwork", "Delete", token.id, "Network", oldToken, token);
 
     res.json({
       success: true,
