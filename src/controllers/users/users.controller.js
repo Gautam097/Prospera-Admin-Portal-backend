@@ -289,3 +289,35 @@ export async function getUserDetails(req, res) {
         return sendError(res, error.message || "Error fetching user details");
     }
 }
+
+export const toggleUserFreeze = async (req, res) => {
+  try {
+    const { id } = req.params; // user ID to freeze/unfreeze
+    const { freeze, reason } = req.body; // freeze: true/false
+    //const adminId = req.user?.id; // assuming you're using auth middleware
+
+    if (typeof freeze !== "boolean") {
+      return sendError(res, "Validation Error", "`freeze` must be a boolean", 400);
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { isFrozen: freeze },
+    });
+
+    // Log the action
+    await prisma.userActionLog.create({
+      data: {
+        userId: id,
+        action: freeze ? "freeze" : "unfreeze",
+        reason: reason?.trim() || null,
+      },
+    });
+
+    const message = freeze ? "User account frozen" : "User account unfrozen";
+    return sendSuccess(res, user, message);
+  } catch (err) {
+    logger.error("toggleUserFreeze error:", err);
+    return sendError(res, err, "Failed to toggle user freeze status");
+  }
+};

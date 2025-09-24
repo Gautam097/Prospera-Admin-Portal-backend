@@ -9,6 +9,7 @@ import * as stateController from '../../../controllers/common/state.controller.j
 
 router.route('/users/list').get(userController.listUsers);
 router.route('/userdetail/:id').get(userController.getUserDetails);
+router.route('/userfreeze/:id').post(userController.toggleUserFreeze);
 
 // country
 router.post("/countries", countryController.createCountry);
