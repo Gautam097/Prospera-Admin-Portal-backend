@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import crypto from 'crypto';
+import geoip from 'geoip-lite';
 
 export function formatTransactionType(type) {
     switch (type) {
@@ -63,3 +64,26 @@ export function generateTxHash() {
     return '0x' + crypto.randomBytes(32).toString('hex');
 }
 
+export function getTimezone(req) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const geo = geoip.lookup(ip);
+    const timeZone = geo?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+
+    return timeZone;
+}
+
+export function convertUTCToTimezone(dateUTC, timeZone) {
+    const formatted = new Date(dateUTC).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: timeZone,
+    });
+
+    // Append "UTC" only if timezone is exactly UTC
+    return timeZone === 'UTC' ? `${formatted} UTC` : formatted;
+
+}

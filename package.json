@@ -5,8 +5,8 @@
     "main": "server.js",
     "type": "module",
     "scripts": {
-        "start": "node server.js",
-        "dev": "nodemon server.js",
+        "start": "cross-env TZ=UTC node server.js",
+        "dev": "cross-env TZ=UTC nodemon server.js",
         "format": "prettier --write .",
         "test": "jest",
         "test:watch": "jest --watch",
@@ -64,6 +64,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.0.0",
+        "cross-env": "^10.0.0",
         "eslint": "^8.55.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-prettier": "^5.0.1",
