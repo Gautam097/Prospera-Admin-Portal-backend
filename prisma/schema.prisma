@@ -251,6 +251,9 @@ model User {
   lastLogin       DateTime?
   mfaSecret       String?
   prosperaId      String?   @unique
+  zohoAccountId          String?
+  seonRegisterScore      Decimal?               @db.Decimal(5, 2)
+  seonResponse           Json?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -285,6 +288,7 @@ model User {
   isFrozen                Boolean                   @default(false)
   actionsTaken            UserActionLog[]           @relation("AdminUserActions")
   adminActionLogs         AdminActionLog[]          @relation("AdminActionLogs")
+  limitLogs               LimitLog[]
   @@index([email])
   @@map("users")
 }
@@ -399,6 +403,9 @@ model PendingUserRegistration {
 
   securityQuestions Json?
   mfaSecret         String?
+  zohoAccountId      String?
+  seonRegisterScore  Decimal?     @db.Decimal(5, 2)
+  seonResponse           Json?
 
   userType     UserType     @default(INDIVIDUAL)
   investorType InvestorType @default(RETAIL_INVESTOR)
@@ -1155,5 +1162,64 @@ model AdminActionLog {
   createdAt   DateTime @default(now())
 
   admin       User     @relation("AdminActionLogs", fields: [adminId], references: [id])
+}
+
+enum SeonApprovalType {
+  AUTO
+  REQUIRED
+  REJECTED
+}
+
+model SeonApprovalRule {
+  id           String        @id @default(cuid())
+  approvalType SeonApprovalType
+  minScore     Int
+  maxScore     Int
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model LimitConfig {
+  id               String          @id @default(cuid())
+  type             LimitType       @unique
+  limitAmount      Float?          // for withdraw, buy, etc.
+  timeWindowHrs    Int?            // for withdraw/buy, null for fees
+  platformFeeType  PlatformFeeType? // only for PLATFORM_FEE
+  platformFeeValue Float?          // only for PLATFORM_FEE
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+enum LimitType {
+  WITHDRAW
+  BUY_TOKEN
+  PURCHASE
+  STAKING
+  PLATFORM_FEE   
+}
+
+enum PlatformFeeType{
+  FIXED
+  PERCENTAGE
+}
+
+model LimitLog {
+  id          String   @id @default(cuid())
+  adminId     String   // who made the change
+  action      LogAction
+  type        LimitType
+  oldValue    Json?
+  newValue    Json?
+  createdAt   DateTime @default(now())
+
+  // relations (optional if you have Admin/User model)
+  admin       User?    @relation(fields: [adminId], references: [id])
+}
+
+enum LogAction {
+  CREATE
+  UPDATE
+  DELETE
 }
 

@@ -28,7 +28,7 @@ Useful links:
         },
         servers: [
             {
-                url: 'http://localhost:8080/api/v1',
+                url: 'http://localhost:5076/api/v1',
                 description: 'Local development server',
             },
             {
@@ -42,16 +42,8 @@ Useful links:
                 description: 'Endpoints related to user operations such as registration, login, MFA setup, etc.',
             },
             {
-                name: 'security-question',
-                description: 'Endpoints related to security-question operations such as adding, editing, deleting, etc.',
-            },
-            {
                 name: 'users',
                 description: 'Endpoints related to users operations.',
-            },
-            {
-                name: 'wallet',
-                description: 'Endpoints related to wallet operations.',
             },
         ],
         security: [

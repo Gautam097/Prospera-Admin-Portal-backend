@@ -4,8 +4,8 @@ import bcrypt from 'bcrypt';
 const accessSecret = process.env.JWT_SECRET;
 const refreshSecret = process.env.JWT_REFRESH_SECRET;
 
-export const generateAccessToken = (userId, role) => {
-    return jwt.sign({ userId, role }, process.env.JWT_SECRET, {
+export const generateAccessToken = (userId, role, timeZone, sessionId) => {
+    return jwt.sign({ userId, role, timeZone, sessionId }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN || '15m',
     });
 };
@@ -25,12 +25,12 @@ export const compareHashedToken = async (token, hashedToken) => {
 };
 
 export function verifyRefreshToken(token) {
-	try {
-		return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-	} catch (err) {
-		console.error('Invalid refresh token:', err.message);
-		return null;
-	}
+    try {
+        return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    } catch (err) {
+        console.error('Invalid refresh token:', err.message);
+        return null;
+    }
 }
 
 export function setCookie(res, name, value, options = {}) {
